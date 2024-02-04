@@ -1,5 +1,6 @@
 package tobyspring.helloboot;
 
+import ch.qos.logback.classic.joran.ReconfigureOnChangeTask;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -12,41 +13,48 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.context.support.GenericWebApplicationContext;
+import org.springframework.web.servlet.DispatcherServlet;
 
 import java.io.IOException;
 
+/**
+ * 독립 실행형 스프링 애플리 케이션
+ */
+
 //@SpringBootApplication
+@Configuration // 구성정보를 가진 클래스임을 명시 >> factory method가 있겠군
+@ComponentScan // 컴포넌트 붙은 애들을 찾아 등록함  >> 매번 클래스를 작성할 필요가 없어짐
 public class HellobootApplication {
-
-	// 0. 스프링 관련 설정 안했지만 알아서 톰캣으로 실행
-	// 컨테이너 관련 모든 작업들이 알아서 진행됨
+    // 스프링 컨테이너가 호출할 factory method
+//    @Bean
+//    public HelloController helloController (HelloService helloService){
+//        return new HelloController(helloService);
+//    }
+//    @Bean
+//    public HelloService helloService(){
+//        return new SimpleHelloService();
+//    }
+    @Bean
+    public ServletWebServerFactory serverFactory(){
+        return new TomcatServletWebServerFactory();
+    }
+    @Bean
+    public DispatcherServlet dispatcherServlet(){
+        return new DispatcherServlet();
+    }
     public static void main(String[] args) {
-//		SpringApplication.run(HellobootApplication.class, args);
-
-        // 2.  new Tomcat().start(); >> 이렇게 바로 띄울 수 있진 않음 >> 도우미 클래스를 이용해 쉽게 띄울 수 있음
-        TomcatServletWebServerFactory serverFactory = new TomcatServletWebServerFactory();
-        // ServletWebServerFactory로 받아도됨
-        WebServer webServer = serverFactory.getWebServer(servletContext -> {
-            servletContext.addServlet("hello", new HttpServlet() {
-                @Override
-                protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-                    String name = req.getParameter("name");
-                    // 응답을 만들어야함(상태코드, 컨텐츠타입헤더, 바디)
-                    resp.setStatus(HttpStatus.OK.value());
-                    resp.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE);
-                    resp.getWriter().println("Hello"+name);
-                }
-            }).addMapping("/halo");
-        });
-        webServer.start();
+//        MySpringApplicaiton.run(HellobootApplication.class, args);
+        SpringApplication.run(HellobootApplication.class,args);
     }
 
 }
-
-// 1. 서블릿 컨테이너를 직접 설치 하지 않고 동작하게 만들것인지? >> stand alone 프로그램에서 알아서 띄워주는 작업 할 것
-// 서블릿 하나를 만드는 작업 >> 이전에 빈 서블릿 컨테이너를 띄워보자
-// servelet Container의 대표예: Tomcat >> tomcat도 java 로 만든 프로그램
-// embedded tomcat 이라는 내장형 톰캣이 존재함
